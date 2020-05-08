@@ -1,0 +1,7 @@
+## Changelog 09/05/2020
+Création du projet.
+Adaptation des scripts bash MLua_*.
+Création du README.md
+Création du ML_TimeLapse.lua
+Fonction d'affichage sur l'écran drow_box
+Fonction de saisie de l'heure get_time
