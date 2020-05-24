@@ -1,3 +1,10 @@
+## Changelog 24/05/2020
+Correction de l'init du fichier log dans MLua_Test.sh et améliorations pour la gestion de la version du fichier en paramètre
+Fonction time_tab de conversion du temps en seconde en un tableau h,m,s
+Fonction make_param_table génère une table de paramètres compatibles avec le boitier pour iso, shutter, aperture
+Fonction get_param affiche les valeurs de la table et permet la sélection.
+Ajout des différentes étapes de saisie des paramètres
+
 ## Changelog 09/05/2020
 Création du projet.
 Adaptation des scripts bash MLua_*.
