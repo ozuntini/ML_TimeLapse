@@ -1,3 +1,14 @@
+## Changelog 31/05/2020
+Création du Manuel d'utilisation.md
+Corrections du README.md
+Ajout de la saisie du MLU Delay
+Modification de l'heure affichée à l'ouverture de la saisie est égale à l'heure précédente dans le cycle.
+Dans l'heure affichée à l'ouverture de la saisie les secondes sont toujours à 0
+Fonction drow_time_box pour afficher en high light le digit en cours de modif
+Fonction drow-table pour la afficher l'ensemble des paramètres
+Passage en table des paramètres de configuration
+Début de factorisation de code
+
 ## Changelog 24/05/2020
 Correction de l'init du fichier log dans MLua_Test.sh et améliorations pour la gestion de la version du fichier en paramètre
 Fonction time_tab de conversion du temps en seconde en un tableau h,m,s

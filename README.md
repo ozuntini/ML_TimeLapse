@@ -11,25 +11,25 @@ Il est exécuté par l'application Magic Lantern. Les informations sur Magic Lan
 ## Magic Lantern
 Installer Magic Lantern sur votre boitier.  
 https://www.magiclantern.fm/index.html  
-Attention ! Il faut activer le module lua  "Lua scripting" dans le menu Modules de MagicLantern.  
+Attention ! Il faut activer le module lua "Lua scripting" dans le menu Modules de MagicLantern.  
 ![Menu Modules](./images/Modules.png)  
 Copier le script ML_TimeLapse.lua dans le répertoire ML/SCRIPTS de la carte SD.
 
 ## Script ML_TimeLapse.lua
-Script en langage Lua qui exécute les cycle de photos.
+Script en langage Lua qui exécute les cycles de photos.
 Il est exécuté par l'interpréteur Lua présent dans MagiLantern.
 
 ## Manuel d'utilisation.md
-Documentation d'utilisation du programme eclipse_OZ.
+Documentation d'utilisation du programme ML_TimeLapse.lua.
 
 ## MLua_PIC.sh
 Script bash utilisé avec l'émulation ML Qemu.  
 https://bitbucket.org/hudson/magic-lantern/src/qemu/contrib/qemu/README.rst  
-Copie du script Lua en paramètre sur les pseudo SD Qemu et lancement du virtualiseur.
+Copie du script Lua en paramètre sur les pseudos SD Qemu et lancement du virtualiseur.
 
 ## MLua_mount_imgSD.sh
 Script de montage des images des pseudos cartes SD pour Qemu et de copie du fichier en paramètre.
 
 ## MLua_Test.sh
-Script bash utilise pour tester l'application.
+Script bash utilisé pour tester l'application.
 Copie du script Lua en paramètre sur la carte SD présente dans le lecteur et démontage de celle-ci.

@@ -1,5 +1,5 @@
 -- Magic Lantern TimeLapse
-Version = "1.0.0"
+Version = "1.0.1"
 -- Exécution d'un cycle de photos pour réaliser un time lapse avec la gestion du passage du jour à la nuit.  
 -- Qualifié avec un Canon 6D.  
 -- Le programme ML_TimeLapse.lua va réaliser une série de photos avec un cycle précis.  
@@ -22,6 +22,19 @@ LoggingFilename = "mltl.log"
 -- Le mode test ne déclenche pas dans ce cas il faut que la valeur soit 1
 -- Il est possible de configurer le TestMode dans la ligne de config du script de schedule
 TestMode = 0
+
+-- Init de la table de config - Table de string
+table_param = {}
+table_param.iso_start = {} ; table_param.time_start = {} ; table_param.ramp_start = {} ; table_param.ramp_iso = {} ; table_param.ramp_end = {}
+table_param.time_end = {} ; table_param.interval = {} ; table_param.mludelay = {}
+
+
+-- Position de la fenêtre de recap de la config
+posit = {}
+posit.top = 4
+posit.left = 4
+posit.bottom = posit.top
+posit.right = posit.left
 
 -- Log to stdout and optionally to a file
 function log(s, ...)
@@ -161,6 +174,7 @@ function drow_box(title,value)
     local width = font:width(title..value) + (pad * 2) -- Calcul de la largeur de la box
     local left = display.width // 2 - width // 2
 	local top = display.height // 2 - height // 2
+	if top < posit.bottom then top = posit.bottom + pad	end  -- Positionnement par rapport avec la fenêtre param
 	local error = false
 	-- Display a window
 	display.rect(left-4,top-4,width+8,height+8,border,border)	-- contour
@@ -170,15 +184,103 @@ function drow_box(title,value)
 	display.print(tostring(title..value),left + pad,top + pad,font,fg,background, width)
 end
 
+-- Drow a window with parameters
+function drow_table()
+	local table = {}
+	table[1] = {table_param.iso_start.name,string.format(" : %s iso",table_param.iso_start.value)}
+	table[2] = {table_param.time_start.name,string.format(" : %02d:%02d:%02d",table_param.time_start.value[1],table_param.time_start.value[2],table_param.time_start.value[3])}
+	table[3] = {table_param.ramp_start.name,string.format(" : %02d:%02d:%02d",table_param.ramp_start.value[1],table_param.ramp_start.value[2],table_param.ramp_start.value[3])}
+	table[4] = {table_param.ramp_iso.name,string.format(" : %s iso",table_param.ramp_iso.value)}
+	table[5] = {table_param.ramp_end.name,string.format(" : %02d:%02d:%02d",table_param.ramp_end.value[1],table_param.ramp_end.value[2],table_param.ramp_end.value[3])}
+	table[6] = {table_param.time_end.name,string.format(" : %02d:%02d:%02d",table_param.time_end.value[1],table_param.time_end.value[2],table_param.time_end.value[3])}
+	table[7] = {table_param.interval.name,string.format(" : %s s",table_param.interval.value)}
+	table[8] = {table_param.mludelay.name,string.format(" : %s ms",table_param.mludelay.value)}
+	local line = #table
+	local i = 1
+	local carmax1 = 1
+	local carmax2 = 1
+	while table[i] ~= nil do							-- index de la table avec un nombre max de caractère pour le champ 1 et 2
+		if #table[carmax1][1] < #table[i][1] then carmax1 = i end
+		if #table[carmax2][2] < #table[i][2] then carmax2 = i end
+		i = i+1
+	end
+	local font = FONT.MED             				-- Type de fonte
+    local border = COLOR.gray(75)
+    local background = COLOR.gray(5)
+    local foreground = COLOR.WHITE
+	local pad = 10
+    local height = (pad * 2) + (font.height * line)		-- Calcul de la hauteur de la box
+	local width = font:width(table[carmax1][1]..table[carmax2][2]) + (pad * 2)	-- Calcul de la largeur de la box
+	local width_name = font:width(table[carmax1][1])	-- largeur du nom du paramétre
+	posit.bottom = height + posit.top
+	posit.right = width + posit.left
+	-- Display a window
+	display.rect(posit.left-4,posit.top-4,width+8,height+8,border,border)	-- contour
+	display.rect(posit.left,posit.top,width,height,border,background)		-- rectangle de saisie
+	local top = posit.top
+	for i, value in ipairs(table) do
+		display.print(tostring(value[1]),posit.left + pad,top + pad,font,foreground,background, width)
+		display.print(tostring(value[2]),posit.left + pad + width_name,top + pad,font,foreground,background, width - width_name)
+		top = top + font.height
+	end
+end
+
+-- Drow a window for display title and time with highlight digit
+function drow_time_box(title, digit1, digit2, digit3, hldigit)
+	local value = string.format("%02d:%02d:%02d", digit1, digit2, digit3)
+    local font = FONT.LARGE              -- Type de fonte
+    local border = COLOR.gray(75)
+    local background = COLOR.gray(5)
+    local foreground = COLOR.WHITE
+    local highlight = COLOR.LIGHT_BLUE
+    local error_forground = COLOR.RED
+	local pad = 20
+    local height = pad * 2 + font.height -- Calcul de la hauteur de la box
+    local width = font:width(title..value) + (pad * 2) -- Calcul de la largeur de la box
+    local left = display.width // 2 - width // 2
+	local top = display.height // 2 - height // 2
+	if top < posit.bottom then top = posit.bottom + pad	end  -- Positionnement par rapport avec la fenêtre param
+	local error = false
+	-- Display a window
+	display.rect(left-4,top-4,width+8,height+8,border,border)	-- contour
+	display.rect(left,top,width,height,border,background)	-- rectangle de saisie
+	local fg = foreground
+	if error then fg = error_forground end
+	display.print(tostring(title..value),left + pad,top + pad,font,fg,background, width) -- Affichage sans HL
+	if hldigit == 1 then
+		left = left + font:width(title) + pad
+		value = string.format("%02d", digit1)
+		width = font:width(value)
+		display.print(tostring(value),left,top + pad,font,highlight,background, width)	-- Affichage du digit1 en hl
+	elseif hldigit == 2 then
+		value = string.format("%s%02d:", title, digit1)
+		left = left + font:width(value) + pad
+		value = string.format("%02d", digit2)
+		width = font:width(value)
+		display.print(tostring(value),left,top + pad,font,highlight,background, width)	-- Affichage du digit2 en hl
+	elseif hldigit == 3 then
+		value = string.format("%s%02d:%02d:", title, digit1, digit2)
+		left = left + font:width(value) + pad
+		value = string.format("%02d", digit3)
+		width = font:width(value)
+		display.print(tostring(value),left,top + pad,font,highlight,background, width)	-- Affichage du digit3
+	else
+		display.print(tostring(title..value),left + pad,top + pad,font,fg,background, width) -- Affichage sans HL
+	end
+end
+
 -- Get a time selectioned by user and return a table h,m,s
 function get_time(title, hh, mm, ss)
+	drow_table()
 	local timeTab = {hh,mm,ss}
 	local timeMax = {23,59,59}
 	local timePtr = 1
+	timeTab[3] = 0
 	keys:start()
 	while true do
 		local value = string.format("%02d:%02d:%02d", timeTab[1], timeTab[2], timeTab[3])
-		drow_box(title,value)
+		--drow_box(title,value)
+		drow_time_box(title, timeTab[1], timeTab[2], timeTab[3], timePtr)
 		local key = keys:getkey()
 		if key ~= nil then
 			if key == KEY.Q then return false
@@ -207,6 +309,7 @@ end
 
 -- Get a parameter selectioned by user and return it
 function get_param(title, paramTab)
+	drow_table()
 	local i = 1
 	keys:start()
 	while true do
@@ -231,6 +334,8 @@ function get_param(title, paramTab)
 	return paramTab[i]
 end
 
+
+
 -- Main
 function main()
     menu.close()
@@ -247,91 +352,110 @@ function main()
     print ("---------------------------------------------------")
 
 	console.hide()
+	local error = false
 
-	-- Etape 1 constitution de la table des ISO
+	-- Etape 1 constitution des tables
 	-- Création d'une table théorique de valeurs d'ISO
-	local isoTab = {50,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,4000,5000,6400,8000,10000,12800,16000,20000,25600,40000,51200,102400}
-	-- Constitution de la table réel de valeur d'ISO
+	local isoTab = {50,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,
+					4000,5000,6400,8000,10000,12800,16000,20000,25600,40000,51200,102400}
+	-- Constitution de la table réel (possible avec ce boitier) de valeurs d'ISO
 	isoTab = make_param_table("iso",isoTab)
 	if type(isoTab) == "table" then
 		log ("%s - ISO Table = %s values",pretty_time(get_cur_secs()), #isoTab)
 	else
 		print ("Error !")
 		log ("%s - ISO Table in Error !",pretty_time(get_cur_secs()))
-	end
-	-- isoTab est maintenant la liste des valeurs possibles d'ISO
+		error = true
+	end -- isoTab est maintenant la liste des valeurs possibles d'ISO
+
+	-- Constitution des noms des différents paramétres
+	table_param.iso_start.name = "Start ISO" ; table_param.iso_start.value = camera.iso.value				-- ISO value au début du cycle
+	table_param.time_start.name = "Time to start" ; table_param.time_start.value = time_tab(get_cur_secs())	-- Start Time
+	table_param.ramp_start.name = "Start Ramp" ; table_param.ramp_start.value = {0,0,0}						-- Ramp start time
+	table_param.ramp_iso.name = "End ISO" ; table_param.ramp_iso.value = camera.iso.value					-- End ramp ISO value
+	table_param.ramp_end.name = "End Ramp" ; table_param.ramp_end.value = {0,0,0}							-- Ramp end value
+	table_param.time_end.name = "Time to end" ; table_param.time_end.value = {0,0,0}						-- End Time
+	table_param.interval.name = "Interval" ; table_param.interval.value = 0									-- Interval
+	table_param.mludelay.name = "MLU Delay" ; table_param.mludelay.value = 0								-- Mirro lockup delay
 
 	-- Etape 2 création de la conf de début de cycle
-	local isoValueStart = camera.iso.value		-- ISO value au début du cycle
-	local timeStart = time_tab(get_cur_secs())	-- Start Time
+	local param = table_param.iso_start
 	-- Saisie des ISO au début du cycle
-	isoValueStart = get_param("Start ISO : ",isoTab)
-	if type(isoValueStart) == "number" then
-		log ("%s - Get ISO = %s",pretty_time(get_cur_secs()), isoValueStart)
+	param.value = get_param(param.name.." : ",isoTab)
+	if type(param.value) == "number" then
+		log ("%s - Get %s : %s",pretty_time(get_cur_secs()), param.name, param.value)
 	else
 		print ("Error !")
-		log ("%s - Get ISO in Error !",pretty_time(get_cur_secs()))
+		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()), param.name)
 	end
+
 	-- Saisie de l'heure de début du cycle
-	timeStart = get_time("Start at : ", timeStart[1], timeStart[2], timeStart[3])
-	if type(timeStart) == "table" then
-		log ("%s - Get Time Start at %02d:%02d:%02d",pretty_time(get_cur_secs()), timeStart[1], timeStart[2], timeStart[3])
+	param = table_param.time_start
+	param.value = get_time(param.name.." : ", param.value[1], param.value[2], param.value[3])
+	if type(param.value) == "table" then
+		log ("%s - Get %s at %02d:%02d:%02d",pretty_time(get_cur_secs()), param.name, param.value[1], param.value[2], param.value[3])
 	else
 		print ("Error !")
-		log ("%s - Get Time Start in Error !",pretty_time(get_cur_secs()))
+		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()),param.name)
 	end
-	timeStart = convert_second(timeStart[1], timeStart[2], timeStart[3])	-- conversion en secondes
-	log ("%s - Start at %ss and %s ISO",pretty_time(get_cur_secs()), timeStart, isoValueStart)
+	param.seconds = convert_second(param.value[1], param.value[2], param.value[3])	-- conversion en secondes
+	-- Recap start config
+	log ("%s - Start at %ss and %s ISO",pretty_time(get_cur_secs()), table_param.time_start.seconds, table_param.iso_start.value)
 	-- Nous avons ISO et heure de début de cycle
 
 	-- Etape 3 création de la conf de ramping
-	local timeRampStart = time_tab(get_cur_secs())	-- Time to Start ramping
-	local isoRampEnd = isoValueStart				-- ISO value en fin de ramping
-	local timeRampEnd = timeRampStart				-- Time to End ramping
 	-- Saisie de l'heure de début de ramping
-	timeRampStart = get_time("Start Ramp at : ", timeRampStart[1], timeRampStart[2], timeRampStart[3])
-	if type(timeRampStart) == "table" then
-		log ("%s - Get Start Ramp at %02d:%02d:%02d",pretty_time(get_cur_secs()), timeRampStart[1], timeRampStart[2], timeRampStart[3])
+	param = table_param.ramp_start
+	param.value = table_param.time_start.value							-- set Time to Start ramping
+	param.value = get_time(param.name.." : ", param.value[1], param.value[2], param.value[3])
+	if type(param.value) == "table" then
+		log ("%s - Get %s at %02d:%02d:%02d",pretty_time(get_cur_secs()), param.name, param.value[1], param.value[2], param.value[3])
 	else
 		print ("Error !")
-		log ("%s - Get Start Ramp in Error !",pretty_time(get_cur_secs()))
+		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()),param.name)
 	end
-	timeRampStart = convert_second(timeRampStart[1], timeRampStart[2], timeRampStart[3])	-- conversion en secondes
+	param.seconds = convert_second(param.value[1], param.value[2], param.value[3])	-- conversion en secondes
 	-- Saisie des ISO en fin de ramping
-	isoRampEnd = get_param("End Ramp ISO : ",isoTab)
-	if type(isoRampEnd) == "number" then
-		log ("%s - Get ISO Ramp end = %s",pretty_time(get_cur_secs()), isoRampEnd)
+	param = table_param.ramp_iso
+	param.value = table_param.iso_start.value							-- set ISO value en fin de ramping
+	param.value = get_param(param.name.." : ",isoTab)
+	if type(param.value) == "number" then
+		log ("%s - Get %s : %s",pretty_time(get_cur_secs()), param.name, param.value)
 	else
 		print ("Error !")
-		log ("%s - Get ISO Ramp end in Error !",pretty_time(get_cur_secs()))
+		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()), param.name)
 	end
 	-- Saisie de l'heure de fin de ramping
-	timeRampEnd = get_time("End Ramp at : ", timeRampEnd[1], timeRampEnd[2], timeRampEnd[3])
-	if type(timeRampEnd) == "table" then
-		log ("%s - Get End Ramp at %02d:%02d:%02d",pretty_time(get_cur_secs()), timeRampEnd[1], timeRampEnd[2], timeRampEnd[3])
+	param = table_param.ramp_end
+	param.value = table_param.ramp_start.value							-- set Time to End ramping
+	param.value = get_time(param.name.." : ", param.value[1], param.value[2], param.value[3])
+	if type(param.value) == "table" then
+		log ("%s - Get %s at %02d:%02d:%02d",pretty_time(get_cur_secs()), param.name, param.value[1], param.value[2], param.value[3])
 	else
 		print ("Error !")
-		log ("%s - Get End Ramp in Error !",pretty_time(get_cur_secs()))
+		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()),param.name)
 	end
-	timeRampEnd = convert_second(timeRampEnd[1], timeRampEnd[2], timeRampEnd[3])	-- conversion en secondes
-	log ("%s - Ramping Start at %ss and finish at %ss ISO",pretty_time(get_cur_secs()),timeRampStart, timeRampEnd, isoRampEnd)
+	param.seconds = convert_second(param.value[1], param.value[2], param.value[3])	-- conversion en secondes
+	-- Recap ramp config
+	log ("%s - Ramping Start at %ss and finish at %ss with %s ISO",pretty_time(get_cur_secs()), table_param.ramp_start.seconds, table_param.ramp_end.seconds, table_param.ramp_iso.value)
 	-- Nous avons heure de début et de fin et ISO du Ramping
 
 	-- Etape 4 création de la conf de fin de cycle
-	local timeEnd = time_tab(get_cur_secs())	-- End Time
-	-- Saisie de l'heure de fin du cycle
-	timeEnd = get_time("End at : ", timeEnd[1], timeEnd[2], timeEnd[3])
-	if type(timeEnd) == "table" then
-		log ("%s - Get Time End at %02d:%02d:%02d",pretty_time(get_cur_secs()), timeEnd[1], timeEnd[2], timeEnd[3])
+	param = table_param.time_end
+	param.value = table_param.ramp_end.value							-- set Time to End
+	param.value = get_time(param.name.." : ", param.value[1], param.value[2], param.value[3])
+	if type(param.value) == "table" then
+		log ("%s - Get %s at %02d:%02d:%02d",pretty_time(get_cur_secs()), param.name, param.value[1], param.value[2], param.value[3])
 	else
 		print ("Error !")
-		log ("%s - Get Time End in Error !",pretty_time(get_cur_secs()))
+		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()),param.name)
 	end
-	timeEnd = convert_second(timeEnd[1], timeEnd[2], timeEnd[3])	-- conversion en secondes
-	log ("%s - End at %ss",pretty_time(get_cur_secs()), timeEnd)
+	param.seconds = convert_second(param.value[1], param.value[2], param.value[3])	-- conversion en secondes
+	log ("%s - End at %ss",pretty_time(get_cur_secs()), table_param.time_end.seconds)
 	-- Nous avons l'heure de fin de cycle
 
-	-- Etape 5 saisie de la durée de l'intervalle
+	-- Etape 5 Interval and MLU delay
+	param = table_param.interval
 	local interval = {}
 	local i = 1
 	while i <= 100 do
@@ -339,20 +463,35 @@ function main()
 		i = i + 1
 	end
 	-- Saisie de l'intervalle
-	interval = get_param("Interval = ",interval)
-	if type(interval) == "number" then
-		log ("%s - Get Interval = %s",pretty_time(get_cur_secs()), interval)
+	param.value = get_param(param.name.." : ",interval)
+	if type(param.value) == "number" then
+		log ("%s - Get %s : %s",pretty_time(get_cur_secs()), param.name, param.value)
 	else
 		print ("Error !")
-		log ("%s - Get Interval in Error !",pretty_time(get_cur_secs()))
-	end
-	log ("%s - Interval = %ss",pretty_time(get_cur_secs()), interval)
-	-- Nous avons l'intervalle
+		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()), param.name)
+	end	-- Nous avons l'intervalle
+	-- Saisie du mirror lockup
+	param = table_param.mludelay
+	local mluDelay = {0,100,200,300,400,500,1000,1500,2000}
+	param.value = get_param(param.name.." : ",mluDelay)
+	if type(param.value) == "number" then
+		log ("%s - Get %s : %s",pretty_time(get_cur_secs()), param.name, param.value)
+	else
+		print ("Error !")
+		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()), param.name)
+	end	-- Nous avons le mirror lockup delay
+	-- Recap interval and mludelay config
+	log ("%s - %s = %ss and %s = %sms",pretty_time(get_cur_secs()), table_param.interval.name, table_param.interval.value, table_param.mludelay.name, table_param.mludelay.value)
+	
 
 	-- Etape 6 nous avons les paramêtres nous pouvons lancer le cycle
-	log ("%s - Star at : %ss with %s ISO and Interval = %ss",pretty_time(get_cur_secs()), timeStart, isoValueStart, interval)
-	log ("%s - Ramp at : %ss and finish at : %ss with %s ISO",pretty_time(get_cur_secs()), timeRampStart, timeRampEnd, isoRampEnd)
-	log ("%s - End at : %ss ",pretty_time(get_cur_secs()), timeEnd)	
+	log ("%s - Start at %ss and %s ISO",pretty_time(get_cur_secs()), table_param.time_start.seconds, table_param.iso_start.value)
+	log ("%s - Start with Interval = %ss, MLU = %sms",pretty_time(get_cur_secs()), table_param.interval.value, table_param.mludelay.value)
+	log ("%s - Ramp at : %ss and finish at : %ss with %s ISO",pretty_time(get_cur_secs()), table_param.ramp_start.seconds, table_param.ramp_end.seconds, table_param.ramp_iso.value)
+	log ("%s - End at : %ss ",pretty_time(get_cur_secs()), table_param.time_end.seconds)	
+
+	drow_table()
+	key.wait()
 
 	keys:stop()
 	display.clear()
