@@ -1,5 +1,5 @@
 -- Magic Lantern TimeLapse
-Version = "1.0.1"
+Version = "1.0.2"
 -- Exécution d'un cycle de photos pour réaliser un time lapse avec la gestion du passage du jour à la nuit.  
 -- Qualifié avec un Canon 6D.  
 -- Le programme ML_TimeLapse.lua va réaliser une série de photos avec un cycle précis.  
@@ -129,7 +129,7 @@ function make_param_table(param, theoTab)
 	elseif param == "aperture" then initParam = camera.aperture.value
 	else
 		log ("%s Parameter : %s not accepted !",pretty_time(get_cur_secs()), param)
-		return false
+		return true
 	end
 	log ("%s - get init parameter %s at %s",pretty_time(get_cur_secs()),param ,initParam)
 	-- Collect accepted parameters
@@ -192,8 +192,8 @@ function drow_table()
 	table[1] = {table_param.iso_start.name,string.format(" : %s iso",table_param.iso_start.value)}
 	table[2] = {table_param.time_start.name,string.format(" : %02d:%02d:%02d D+%s",table_param.time_start.value[1],table_param.time_start.value[2],table_param.time_start.value[3],table_param.time_start.day)}
 	table[3] = {table_param.ramp_start.name,string.format(" : %02d:%02d:%02d D+%s",table_param.ramp_start.value[1],table_param.ramp_start.value[2],table_param.ramp_start.value[3],table_param.ramp_start.day)}
-	table[4] = {table_param.ramp_iso.name,string.format(" : %s iso",table_param.ramp_iso.value)}
-	table[5] = {table_param.ramp_end.name,string.format(" : %02d:%02d:%02d D+%s",table_param.ramp_end.value[1],table_param.ramp_end.value[2],table_param.ramp_end.value[3],table_param.ramp_end.day)}
+	table[4] = {table_param.ramp_end.name,string.format(" : %02d:%02d:%02d D+%s",table_param.ramp_end.value[1],table_param.ramp_end.value[2],table_param.ramp_end.value[3],table_param.ramp_end.day)}
+	table[5] = {table_param.ramp_iso.name,string.format(" : %s iso",table_param.ramp_iso.value)}
 	table[6] = {table_param.time_end.name,string.format(" : %02d:%02d:%02d D+%s",table_param.time_end.value[1],table_param.time_end.value[2],table_param.time_end.value[3],table_param.time_end.day)}
 	table[7] = {table_param.interval.name,string.format(" : %s s",table_param.interval.value)}
 	table[8] = {table_param.mludelay.name,string.format(" : %s ms",table_param.mludelay.value)}
@@ -290,7 +290,7 @@ function get_time(title, hh, mm, ss)
 		drow_time_box(title, timeTab[1], timeTab[2], timeTab[3], timePtr)
 		local key = keys:getkey()
 		if key ~= nil then
-			if key == KEY.Q then return false
+			if key == KEY.Q then return "Q"
 			elseif key == KEY.UP or key == KEY.WHEEL_UP then
 				timeTab[timePtr] = timeTab[timePtr] + 1
 				if timeTab[timePtr] > timeMax[timePtr] then timeTab[timePtr] = 0 end
@@ -323,7 +323,7 @@ function get_param(title, paramTab)
 		drow_box(title,paramTab[i])
 		local key = keys:getkey()
 		if key ~= nil then
-			if key == KEY.Q then return false
+			if key == KEY.Q then return "Q"
 			elseif key == KEY.UP or key == KEY.WHEEL_UP then
 				i = i + 1
 				if i > #paramTab then i = 1 end
@@ -343,25 +343,127 @@ end
 
 function shoose_value(param, table)
 	param.value = get_param(param.name.." : ",table)
-	if type(param.value) == "number" then
+	if param.value == "Q" then
+		log ("%s - Get %s key Q pressed => Exit !",pretty_time(get_cur_secs()),param.name)
+		return "Q" -- Sortie demandée
+	elseif type(param.value) == "number" then
 		log ("%s - Get %s : %s",pretty_time(get_cur_secs()), param.name, param.value)
 	else
 		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()), param.name)
-		return false
+		return true
 	end
-	return true
+	return false
 end
 
 function shoose_time(param)
 	param.value = get_time(param.name.." : ", param.value[1], param.value[2], param.value[3])
-	if type(param.value) == "table" then
+	if param.value == "Q" then
+		log ("%s - Get %s key Q pressed => Exit !",pretty_time(get_cur_secs()),param.name)
+		return "Q" -- Sortie demandée
+	elseif type(param.value) == "table" then
 		log ("%s - Get %s at %02d:%02d:%02d",pretty_time(get_cur_secs()), param.name, param.value[1], param.value[2], param.value[3])
 		param.seconds = convert_second(param.value[1], param.value[2], param.value[3])	-- conversion en secondes
 	else
 		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()),param.name)
-		return false
+		return true
 	end
-	return true
+	return false
+end
+
+-- Mirror lockup function
+function set_mirror_lockup(mirrorLockupDelay)
+    if (mirrorLockupDelay > 0)
+    then
+        menu.set("Mirror Lockup", "MLU mode", "Handheld")
+        menu.set("Mirror Lockup", "Handheld Shutter", "All values")
+        menu.set("Mirror Lockup", "Handheld Delay", "1s")
+        menu.set("Shoot", "Mirror Lockup", "Handheld")
+        log ("%s - Set mirror lockup ON. Delay = %s",pretty_time(get_cur_secs()), mirrorLockupDelay)
+    else
+        menu.set("Shoot", "Mirror Lockup", "OFF")
+        log ("%s - Set mirror lockup OFF.",pretty_time(get_cur_secs()))
+    end
+end
+
+-- Take a picture function
+function take_shoot(iso, aperture, shutter_speed, mluDelay) -- mluDelay = delay to wait after mirror lockup in ms
+    camera.iso.value = iso
+    camera.aperture.value = aperture
+    camera.shutter.value = shutter_speed
+    if (mluDelay > 0)
+    then
+        key.press(KEY.HALFSHUTTER)
+        key.press(KEY.FULLSHUTTER)
+        log ("%s - Mirror Up",pretty_time(get_cur_secs()))
+        msleep(mluDelay)
+    end
+    if (TestMode == 1)
+    then
+        log ("%s - NO Shoot! ISO: %s Aperture: %s shutter: %s Test Mode",pretty_time(get_cur_secs()), tostring(camera.iso.value), tostring(camera.aperture.value), pretty_shutter(camera.shutter.value))
+    else
+        camera.shoot(false) -- Shoot a picture
+        log ("%s - Shoot! ISO: %s Aperture: %s shutter: %s",pretty_time(get_cur_secs()), tostring(camera.iso.value), tostring(camera.aperture.value), pretty_shutter(camera.shutter.value))
+    end
+    if (mluDelay > 0)
+    then
+        key.press(KEY.UNPRESS_HALFSHUTTER)
+        key.press(KEY.UNPRESS_FULLSHUTTER)
+    end
+end
+
+-- Boucle de prises de vue (hFin et intervalle en seconde)
+function boucle(hFin, intervalle, iso, aperture, shutter_speed, mluDelay)
+    intervalle = math.ceil(intervalle - 0.5)
+    if (intervalle < 1) then
+        intervalle = 1  -- impossible d'avoir un intervalle < à 1s
+        log ("%s - action Boucle ou Interval : set interval to 1s.",pretty_time(get_cur_secs()))
+    end
+    log ("%s - Boucle: hFin: %s Intervalle: %s s", pretty_time(get_cur_secs()), pretty_time(hFin), intervalle)
+    local shootTime = get_cur_secs()
+    while (get_cur_secs() <= hFin) and ((shootTime + intervalle) <= hFin)
+    do
+        shootTime = get_cur_secs()
+        take_shoot(iso, aperture, shutter_speed, mluDelay)
+        while ((shootTime + intervalle -1) >= get_cur_secs()) and ((shootTime + intervalle) <= hFin) -- intervalle -1 pour prendre en compte le délais de prise de vue
+        do
+            msleep(500) -- Wait 1/2 s
+        end
+    end
+    log ("%s - End of boucle",pretty_time(get_cur_secs()))
+end
+
+-- Read Boucle and Photo line and do action
+function do_action(action, timeStart, timeEnd, interval, aperture, iso, shutterSpeed, mluDelay)
+    
+    -- Les paramètres sont chargés on gère le mirror lockup
+    set_mirror_lockup(mluDelay)
+
+    -- On boucle tant que nous ne sommes pas dans le bon créneau horaire
+    local counter = 0
+    while (get_cur_secs() < (timeStart - (mluDelay/1000)))
+    do  -- Pas encore l'heure on attend 0.25 seconde
+        counter = counter +1
+        if (counter >= 80) -- Affiche Waiting toutes les 20s
+        then
+            display.notify_box("Waiting "..(timeStart - get_cur_secs()), 2000)
+            counter = 0
+        end
+        msleep(250)
+    end
+    if (action == "Boucle") or (action == "Interval") -- Traitement d'une ligne d'action Boucle ou Interval
+    then
+        if (get_cur_secs() <= timeEnd ) -- On vérifie que l'on ne soit pas après l'heure
+        then
+            -- Lancement de la boucle de prises de vues
+            boucle(timeEnd, interval, iso, aperture, shutterSpeed, mluDelay)
+        else
+            log ("%s - Too last ! TimeEnd: %ss soit %s", pretty_time(get_cur_secs()), timeEnd, pretty_time(timeEnd))
+        end
+    elseif (action == "Photo") -- Traitement d'une ligne de Photo
+    then
+        -- Lancement de la prises de vues
+        take_shoot(iso, aperture, shutterSpeed, mluDelay)
+    end
 end
 
 -- Main
@@ -385,8 +487,14 @@ function main()
 	-- Etape 1 constitution des tables
 	-- ISO
 		-- Création d'une table théorique de valeurs d'ISO
-	local isoTab = {50,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,
-					4000,5000,6400,8000,10000,12800,16000,20000,25600,40000,51200,102400}
+	local isoTab = {}
+	if camera.model_short == "6D" then
+		isoTab = {50,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,
+						4000,5000,6400,8000,10000,12800,16000,20000,25600,40000,51200,102400}
+	else
+		isoTab = {50,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,
+						4000,5000,6400,8000}
+	end
 		-- Constitution de la table réel (possible avec ce boitier) de valeurs d'ISO
 	isoTab = make_param_table("iso",isoTab)
 	if type(isoTab) == "table" then
@@ -414,97 +522,165 @@ function main()
 	table_param.time_start.name = "Time to start" ; table_param.time_start.value = time_tab(get_cur_secs()) ; table_param.time_start.day =0	-- Start Time
 	table_param.ramp_start.name = "Start Ramp" ; table_param.ramp_start.value = {0,0,0} ; table_param.ramp_start.day = 0	-- Ramp start time
 	table_param.ramp_iso.name = "End ISO" ; table_param.ramp_iso.value = camera.iso.value					-- End ramp ISO value
-	table_param.ramp_end.name = "End Ramp" ; table_param.ramp_end.value = {0,0,0} ; table_param.ramp_end.day = 0	-- Ramp end value
-	table_param.time_end.name = "Time to end" ; table_param.time_end.value = {0,0,0} ; table_param.time_end.day = 0	-- End Time
+	table_param.ramp_end.name = "Stop Ramp" ; table_param.ramp_end.value = {0,0,0} ; table_param.ramp_end.day = 0	-- Ramp end value
+	table_param.time_end.name = "Time to stop" ; table_param.time_end.value = {0,0,0} ; table_param.time_end.day = 0	-- End Time
 	table_param.interval.name = "Interval" ; table_param.interval.value = 0									-- Interval
 	table_param.mludelay.name = "MLU Delay" ; table_param.mludelay.value = 0								-- Mirro lockup delay
 
-	-- Etape 2 création de la conf de début de cycle
-		-- Saisie des ISO au début du cycle
-	lineConfigNow = 1
-	error = shoose_value(table_param.iso_start,isoTab)
-		-- Saisie de l'heure de début du cycle
-	lineConfigNow = 2
-	error = shoose_time(table_param.time_start)
-	if table_param.time_start.seconds > get_cur_secs() then	-- Gestion du jour
-		table_param.time_start.day = 0
-	else
-		table_param.time_start.day = table_param.time_start.day + 1	-- Pas de gestion du changement d'année
-	end
-		-- Recap start config
-	log ("%s - Start at %ss and %s ISO",pretty_time(get_cur_secs()), table_param.time_start.seconds, table_param.iso_start.value)
-		-- Nous avons ISO et heure de début de cycle
+	while error ~= true or error ~= "Q" do
+		-- Etape 2 création de la conf de début de cycle
+			-- Saisie des ISO au début du cycle
+		lineConfigNow = 1
+		error = shoose_value(table_param.iso_start,isoTab)
+		-- Gesion de la sortie
+		if error == "Q" then
+			print("key Q pressed => Exit !")
+			break
+		elseif error then
+			print(string.format("Error on %s exit application. See %s",table_param.iso_start.name, LoggingFilename))
+			break
+		end
+			-- Saisie de l'heure de début du cycle
+		lineConfigNow = 2
+		error = shoose_time(table_param.time_start)
+		-- Gesion de la sortie
+		if error == "Q" then
+			print("key Q pressed => Exit !")
+			break
+		elseif error then
+			print(string.format("Error on %s exit application. See %s",table_param.time_start.name, LoggingFilename))
+			break
+		end
+		-- Gestion du jour, attention pas de gestion du changement d'année
+		if table_param.time_start.seconds > get_cur_secs() then
+			table_param.time_start.day = 0
+		else
+			table_param.time_start.day = table_param.time_start.day + 1
+		end
+			-- Recap start config
+		log ("%s - Start at %ss and %s ISO",pretty_time(get_cur_secs()), table_param.time_start.seconds, table_param.iso_start.value)
+			-- Nous avons ISO et heure de début de cycle
 
-	-- Etape 3 création de la conf de ramping
-		-- Saisie de l'heure de début de ramping
-	lineConfigNow = 3
-	table_param.ramp_start.value = table_param.time_start.value												-- set Time to Start ramping
-	table_param.ramp_start.day = table_param.time_start.day
-	error = shoose_time(table_param.ramp_start)
-	if table_param.ramp_start.seconds > table_param.time_start.seconds then	-- Gestion du jour
+		-- Etape 3 création de la conf de ramping
+			-- Saisie de l'heure de début de ramping
+		lineConfigNow = 3
+		table_param.ramp_start.value = table_param.time_start.value												-- set Time to Start ramping
 		table_param.ramp_start.day = table_param.time_start.day
-	else
-		table_param.ramp_start.day = table_param.time_start.day + 1			-- Pas de gestion du changement d'année
-	end
-		-- Saisie des ISO en fin de ramping
-	lineConfigNow = 4
-	table_param.ramp_iso.value = table_param.iso_start.value												-- set ISO value en fin de ramping
-	error = shoose_value(table_param.ramp_iso,isoTab)
-		-- Saisie de l'heure de fin de ramping
-	lineConfigNow = 5
-	table_param.ramp_end.value = table_param.ramp_start.value												-- set Time to End ramping
-	table_param.ramp_end.day = table_param.ramp_start.day
-	error = shoose_time(table_param.ramp_end)
-	if table_param.ramp_end.seconds > table_param.ramp_start.seconds then	-- Gestion du jour
+		error = shoose_time(table_param.ramp_start)
+		-- Gesion de la sortie
+		if error == "Q" then
+			print("key Q pressed => Exit !")
+			break
+		elseif error then
+			print(string.format("Error on %s exit application. See %s",table_param.ramp_start.name, LoggingFilename))
+			break
+		end
+		-- Gestion du jour, attention pas de gestion du changement d'année
+		if table_param.ramp_start.seconds > table_param.time_start.seconds then
+			table_param.ramp_start.day = table_param.time_start.day
+		else
+			table_param.ramp_start.day = table_param.time_start.day + 1
+		end
+			-- Saisie de l'heure de fin de ramping
+		lineConfigNow = 4
+		table_param.ramp_end.value = table_param.ramp_start.value												-- set Time to End ramping
 		table_param.ramp_end.day = table_param.ramp_start.day
-	else
-		table_param.ramp_end.day = table_param.ramp_start.day + 1			-- Pas de gestion du changement d'année
-	end
-		-- Recap ramp config
-	log ("%s - Ramping Start at %ss and finish at %ss with %s ISO",pretty_time(get_cur_secs()), table_param.ramp_start.seconds, table_param.ramp_end.seconds, table_param.ramp_iso.value)
-		-- Nous avons heure de début et de fin et ISO du Ramping
+		error = shoose_time(table_param.ramp_end)
+		-- Gesion de la sortie
+		if error == "Q" then
+			print("key Q pressed => Exit !")
+			break
+		elseif error then
+			print(string.format("Error on %s exit application. See %s",table_param.ramp_end.name, LoggingFilename))
+			break
+		end
+		-- Gestion du jour, attention pas de gestion du changement d'année
+		if table_param.ramp_end.seconds > table_param.ramp_start.seconds then
+			table_param.ramp_end.day = table_param.ramp_start.day
+		else
+			table_param.ramp_end.day = table_param.ramp_start.day + 1
+		end
+			-- Saisie des ISO en fin de ramping
+		lineConfigNow = 5
+		table_param.ramp_iso.value = table_param.iso_start.value												-- set ISO value en fin de ramping
+		error = shoose_value(table_param.ramp_iso,isoTab)
+		-- Gesion de la sortie
+		if error == "Q" then
+			print("key Q pressed => Exit !")
+			break
+		elseif error then
+			print(string.format("Error on %s exit application. See %s",table_param.ramp_iso.name, LoggingFilename))
+			break
+		end
+			-- Recap ramp config
+		log ("%s - Ramping Start at %ss and finish at %ss with %s ISO",pretty_time(get_cur_secs()), table_param.ramp_start.seconds, table_param.ramp_end.seconds, table_param.ramp_iso.value)
+			-- Nous avons heure de début et de fin et ISO du Ramping
 
-	-- Etape 4 création de la conf de fin de cycle
-		-- Saisie de l'heure de fin de cycle
-	lineConfigNow = 6
-	table_param.time_end.value = table_param.ramp_end.value													-- set Time to End
-	table_param.time_end.day = table_param.ramp_end.day
-	error = shoose_time(table_param.time_end)
-	if table_param.time_end.seconds > table_param.ramp_end.seconds then	-- Gestion du jour
+		-- Etape 4 création de la conf de fin de cycle
+			-- Saisie de l'heure de fin de cycle
+		lineConfigNow = 6
+		table_param.time_end.value = table_param.ramp_end.value													-- set Time to End
 		table_param.time_end.day = table_param.ramp_end.day
-	else
-		table_param.time_end.day = table_param.ramp_end.day + 1			-- Pas de gestion du changement d'année
+		error = shoose_time(table_param.time_end)
+		-- Gesion de la sortie
+		if error == "Q" then
+			print("key Q pressed => Exit !")
+			break
+		elseif error then
+			print(string.format("Error on %s exit application. See %s",table_param.time_end.name, LoggingFilename))
+			break
+		end
+		-- Gestion du jour, attention pas de gestion du changement d'année
+		if table_param.time_end.seconds > table_param.ramp_end.seconds then
+			table_param.time_end.day = table_param.ramp_end.day
+		else
+			table_param.time_end.day = table_param.ramp_end.day + 1
+		end
+			-- Recap ramp config
+		log ("%s - End at %ss",pretty_time(get_cur_secs()), table_param.time_end.seconds)
+			-- Nous avons l'heure de fin de cycle
+
+		-- Etape 5 Interval and MLU delay
+			-- Saisie de la valeur de l'intervalle
+		lineConfigNow = 7
+		error = shoose_value(table_param.interval,interval)
+		-- Gesion de la sortie
+		if error == "Q" then
+			print("key Q pressed => Exit !")
+			break
+		elseif error then
+			print(string.format("Error on %s exit application. See %s",table_param.interval.name, LoggingFilename))
+			break
+		end
+			-- Saisie du mirror lockup
+		lineConfigNow = 8
+		error = shoose_value(table_param.mludelay,mluDelay)
+		-- Gesion de la sortie
+		if error == "Q" then
+			print("key Q pressed => Exit !")
+			break
+		elseif error then
+			print(string.format("Error on %s exit application. See %s",table_param.mludelay.name, LoggingFilename))
+			break
+		end
+			-- Recap interval and mludelay config
+		log ("%s - %s = %ss and %s = %sms",pretty_time(get_cur_secs()), table_param.interval.name, table_param.interval.value, table_param.mludelay.name, table_param.mludelay.value)
+			-- Nous avons l'intervalle et le MLU Delay
+
+		-- Etape 6 nous avons les paramêtres nous pouvons lancer le cycle
+		log ("%s - Start at %ss and %s ISO",pretty_time(get_cur_secs()), table_param.time_start.seconds, table_param.iso_start.value)
+		log ("%s - Start with Interval = %ss, MLU = %sms",pretty_time(get_cur_secs()), table_param.interval.value, table_param.mludelay.value)
+		log ("%s - Ramp at : %ss and finish at : %ss with %s ISO",pretty_time(get_cur_secs()), table_param.ramp_start.seconds, table_param.ramp_end.seconds, table_param.ramp_iso.value)
+		log ("%s - End at : %ss ",pretty_time(get_cur_secs()), table_param.time_end.seconds)	
+
+		lineConfigNow = 0
+		drow_table()
+		key.wait()
 	end
-		-- Recap ramp config
-	log ("%s - End at %ss",pretty_time(get_cur_secs()), table_param.time_end.seconds)
-		-- Nous avons l'heure de fin de cycle
-
-	-- Etape 5 Interval and MLU delay
-		-- Saisie de la valeur de l'intervalle
-	lineConfigNow = 7
-	error = shoose_value(table_param.interval,interval)
-		-- Saisie du mirror lockup
-	lineConfigNow = 8
-	error = shoose_value(table_param.mludelay,mluDelay)
-		-- Recap interval and mludelay config
-	log ("%s - %s = %ss and %s = %sms",pretty_time(get_cur_secs()), table_param.interval.name, table_param.interval.value, table_param.mludelay.name, table_param.mludelay.value)
-		-- Nous avons l'intervalle et le MLU Delay
-
-	-- Etape 6 nous avons les paramêtres nous pouvons lancer le cycle
-	log ("%s - Start at %ss and %s ISO",pretty_time(get_cur_secs()), table_param.time_start.seconds, table_param.iso_start.value)
-	log ("%s - Start with Interval = %ss, MLU = %sms",pretty_time(get_cur_secs()), table_param.interval.value, table_param.mludelay.value)
-	log ("%s - Ramp at : %ss and finish at : %ss with %s ISO",pretty_time(get_cur_secs()), table_param.ramp_start.seconds, table_param.ramp_end.seconds, table_param.ramp_iso.value)
-	log ("%s - End at : %ss ",pretty_time(get_cur_secs()), table_param.time_end.seconds)	
-
-	lineConfigNow = 0
-	drow_table()
-	key.wait()
-
+	
 	keys:stop()
 	display.clear()
 	console.show() 
-
-	msleep(2000)
 
     print ("Press any key to exit.")
     key.wait()

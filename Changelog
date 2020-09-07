@@ -1,3 +1,12 @@
+## Changelog 07/09/2020
+Gestion de la sortie par la touche Q
+Gestion des erreurs à la saisie des paramètres
+Gestion des boitiers 6D et autre pour la table des ISO
+MLua_PIC.sh
+Ajout d'un délai d'attente du démontage des pseudo SD
+Gestion du nom du fichier log,
+Gestion de plusieurs modèles de boitier. 6D et 60D pour l'instant
+
 ## Changelog 04/06/2020
 Factorisation de code
 Gestion du changement de jour dans la saisie des heures
