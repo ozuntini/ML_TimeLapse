@@ -1,5 +1,5 @@
 -- Magic Lantern TimeLapse
-Version = "1.0.2"
+Version = "1.0.3 "
 -- Exécution d'un cycle de photos pour réaliser un time lapse avec la gestion du passage du jour à la nuit.  
 -- Qualifié avec un Canon 6D.  
 -- Le programme ML_TimeLapse.lua va réaliser une série de photos avec un cycle précis.  
@@ -21,13 +21,15 @@ LoggingFilename = "mltl.log"
 -- Mode test
 -- Le mode test ne déclenche pas dans ce cas il faut que la valeur soit 1
 -- Il est possible de configurer le TestMode dans la ligne de config du script de schedule
-TestMode = 0
+TestMode = 1
 
 -- Init de la table de config - Table de string
 table_param = {}
 table_param.iso_start = {} ; table_param.time_start = {} ; table_param.ramp_start = {} ; table_param.ramp_iso = {} ; table_param.ramp_end = {}
 table_param.time_end = {} ; table_param.interval = {} ; table_param.mludelay = {}
 
+-- Init de la table des iso
+isoTab = {}
 
 -- Position de la fenêtre de recap de la config
 posit = {}
@@ -314,7 +316,7 @@ function get_time(title, hh, mm, ss)
 	return timeTab
 end
 
--- Get a parameter selectioned by user and return it
+-- Get a parameter selectioned by user and return it and index
 function get_param(title, paramTab)
 	drow_table()
 	local i = 1
@@ -338,16 +340,26 @@ function get_param(title, paramTab)
 	end
 	keys:stop()
 	display.clear()
-	return paramTab[i]
+	return paramTab[i], i
+end
+
+function shoose_answer(title, table)
+	local answer = get_param(title.." : ",table)
+	if answer == "Q" then
+		log ("%s - Get %s key Q pressed => Exit !",pretty_time(get_cur_secs()),title)
+		return "Q" -- Sortie demandée
+	end
+	log ("%s - Get %s : %s",pretty_time(get_cur_secs()), title, answer)
+	return answer
 end
 
 function shoose_value(param, table)
-	param.value = get_param(param.name.." : ",table)
+	param.value, param.index = get_param(param.name.." : ",table)
 	if param.value == "Q" then
 		log ("%s - Get %s key Q pressed => Exit !",pretty_time(get_cur_secs()),param.name)
 		return "Q" -- Sortie demandée
 	elseif type(param.value) == "number" then
-		log ("%s - Get %s : %s",pretty_time(get_cur_secs()), param.name, param.value)
+		log ("%s - Get %s value : %s index : %s",pretty_time(get_cur_secs()), param.name, param.value, param.index)
 	else
 		log ("%s - Get %s in Error !",pretty_time(get_cur_secs()), param.name)
 		return true
@@ -374,10 +386,11 @@ end
 function set_mirror_lockup(mirrorLockupDelay)
     if (mirrorLockupDelay > 0)
     then
-        menu.set("Mirror Lockup", "MLU mode", "Handheld")
+        menu.set("Mirror Lockup", "MLU mode", "Always ON")
         menu.set("Mirror Lockup", "Handheld Shutter", "All values")
         menu.set("Mirror Lockup", "Handheld Delay", "1s")
-        menu.set("Shoot", "Mirror Lockup", "Handheld")
+        menu.set("Mirror Lockup", "Normal MLU Delay", "1s")
+        menu.set("Shoot", "Mirror Lockup", "Always ON")
         log ("%s - Set mirror lockup ON. Delay = %s",pretty_time(get_cur_secs()), mirrorLockupDelay)
     else
         menu.set("Shoot", "Mirror Lockup", "OFF")
@@ -386,10 +399,8 @@ function set_mirror_lockup(mirrorLockupDelay)
 end
 
 -- Take a picture function
-function take_shoot(iso, aperture, shutter_speed, mluDelay) -- mluDelay = delay to wait after mirror lockup in ms
+function take_shoot(iso, mluDelay) -- mluDelay = delay to wait after mirror lockup in ms
     camera.iso.value = iso
-    camera.aperture.value = aperture
-    camera.shutter.value = shutter_speed
     if (mluDelay > 0)
     then
         key.press(KEY.HALFSHUTTER)
@@ -411,59 +422,75 @@ function take_shoot(iso, aperture, shutter_speed, mluDelay) -- mluDelay = delay 
     end
 end
 
--- Boucle de prises de vue (hFin et intervalle en seconde)
-function boucle(hFin, intervalle, iso, aperture, shutter_speed, mluDelay)
-    intervalle = math.ceil(intervalle - 0.5)
-    if (intervalle < 1) then
-        intervalle = 1  -- impossible d'avoir un intervalle < à 1s
-        log ("%s - action Boucle ou Interval : set interval to 1s.",pretty_time(get_cur_secs()))
-    end
-    log ("%s - Boucle: hFin: %s Intervalle: %s s", pretty_time(get_cur_secs()), pretty_time(hFin), intervalle)
-    local shootTime = get_cur_secs()
-    while (get_cur_secs() <= hFin) and ((shootTime + intervalle) <= hFin)
-    do
-        shootTime = get_cur_secs()
-        take_shoot(iso, aperture, shutter_speed, mluDelay)
-        while ((shootTime + intervalle -1) >= get_cur_secs()) and ((shootTime + intervalle) <= hFin) -- intervalle -1 pour prendre en compte le délais de prise de vue
-        do
-            msleep(500) -- Wait 1/2 s
-        end
-    end
-    log ("%s - End of boucle",pretty_time(get_cur_secs()))
-end
-
 -- Read Boucle and Photo line and do action
-function do_action(action, timeStart, timeEnd, interval, aperture, iso, shutterSpeed, mluDelay)
-    
+function do_action()
+
     -- Les paramètres sont chargés on gère le mirror lockup
-    set_mirror_lockup(mluDelay)
+	set_mirror_lockup(table_param.mludelay.value)
+	
+	-- Calcul des différents référentiels de temps
+	local time_now = get_cur_secs()
+	local relativ_start = table_param.time_start.seconds + (table_param.time_start.day * 86400) - time_now
+	local relativ_startramp = table_param.ramp_start.seconds + (table_param.ramp_start.day * 86400) - time_now
+	local relativ_stopramp = table_param.ramp_end.seconds + (table_param.ramp_end.day * 86400) - time_now
+	local relativ_stop = table_param.time_end.seconds + (table_param.time_end.day * 86400) - time_now
+
+	local time_zero = dryos.clock
+
+	local duration_to_go = relativ_start - (dryos.clock - time_zero)
+	local duration_start = relativ_startramp - relativ_start
+	local duration_ramp = relativ_stopramp - relativ_startramp
+	local duration_stop = relativ_stop - relativ_stopramp
+
+	log ("%s - Relativ : Zero : %s Start : %s Startramp : %s Stopramp : %s Stop : %s",pretty_time(get_cur_secs()), time_zero , relativ_start, relativ_startramp, relativ_stopramp, relativ_stop)
+	log ("%s - Duration = To go : %s Start : %s Ramp : %s Stop : %s",pretty_time(get_cur_secs()), duration_to_go, duration_start, duration_ramp, duration_stop)
 
     -- On boucle tant que nous ne sommes pas dans le bon créneau horaire
     local counter = 0
-    while (get_cur_secs() < (timeStart - (mluDelay/1000)))
-    do  -- Pas encore l'heure on attend 0.25 seconde
-        counter = counter +1
+    while ((dryos.clock - time_zero) < (relativ_start - (table_param.mludelay.value/1000)))
+	do  -- Pas encore l'heure on attend 0.25 seconde
+        counter = counter + 1
         if (counter >= 80) -- Affiche Waiting toutes les 20s
         then
-            display.notify_box("Waiting "..(timeStart - get_cur_secs()), 2000)
+            display.notify_box("Waiting "..(relativ_start - (dryos.clock - time_zero)), 2000)
             counter = 0
         end
         msleep(250)
-    end
-    if (action == "Boucle") or (action == "Interval") -- Traitement d'une ligne d'action Boucle ou Interval
-    then
-        if (get_cur_secs() <= timeEnd ) -- On vérifie que l'on ne soit pas après l'heure
-        then
-            -- Lancement de la boucle de prises de vues
-            boucle(timeEnd, interval, iso, aperture, shutterSpeed, mluDelay)
-        else
-            log ("%s - Too last ! TimeEnd: %ss soit %s", pretty_time(get_cur_secs()), timeEnd, pretty_time(timeEnd))
+	end
+	-- Boucle de prise de vues
+	local shootTime = (dryos.clock - time_zero)
+	local stepNumber = 0
+	while ((dryos.clock - time_zero) <= relativ_stop)
+	do
+		shootTime = (dryos.clock - time_zero)
+		if (shootTime < relativ_startramp)
+		then
+			--
+			take_shoot(table_param.iso_start.value, table_param.mludelay.value)
+		elseif (shootTime >= relativ_startramp) and (shootTime < relativ_stopramp) then
+			stepNumber = math.ceil((dryos.clock - time_zero - relativ_startramp) / (duration_ramp/(table_param.ramp_iso.index - table_param.iso_start.index)))
+			stepNumber = table_param.iso_start.index + stepNumber
+			if table_param.iso_start.index > table_param.ramp_iso.index
+			then
+				if stepNumber < table_param.ramp_iso.index then
+					stepNumber = table_param.ramp_iso.index
+				end
+			else
+				if stepNumber > table_param.ramp_iso.index then
+					stepNumber = table_param.ramp_iso.index
+				end
+			end
+			--
+			take_shoot(isoTab[stepNumber], table_param.mludelay.value)
+		elseif (shootTime >= relativ_stopramp) and (shootTime <= relativ_stop) then
+			--
+			take_shoot(table_param.ramp_iso.value, table_param.mludelay.value)
+		end
+		while ((shootTime + table_param.interval.value -1 ) >= (dryos.clock - time_zero)) -- interval -1 pour prendre en compte le délais de prise de vue
+        do
+            msleep(500) -- Wait 1/2 s
         end
-    elseif (action == "Photo") -- Traitement d'une ligne de Photo
-    then
-        -- Lancement de la prises de vues
-        take_shoot(iso, aperture, shutterSpeed, mluDelay)
-    end
+	end
 end
 
 -- Main
@@ -487,13 +514,12 @@ function main()
 	-- Etape 1 constitution des tables
 	-- ISO
 		-- Création d'une table théorique de valeurs d'ISO
-	local isoTab = {}
 	if camera.model_short == "6D" then
 		isoTab = {50,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,
-						4000,5000,6400,8000,10000,12800,16000,20000,25600,40000,51200,102400}
+				4000,5000,6400,8000,10000,12800,16000,20000,25600,40000,51200,102400}
 	else
 		isoTab = {50,100,125,160,200,250,320,400,500,640,800,1000,1250,1600,2000,2500,3200,
-						4000,5000,6400,8000}
+				4000,5000,6400,8000}
 	end
 		-- Constitution de la table réel (possible avec ce boitier) de valeurs d'ISO
 	isoTab = make_param_table("iso",isoTab)
@@ -519,13 +545,13 @@ function main()
 
 	-- Constitution des noms des différents paramétres
 	table_param.iso_start.name = "Start ISO" ; table_param.iso_start.value = camera.iso.value				-- ISO value au début du cycle
-	table_param.time_start.name = "Time to start" ; table_param.time_start.value = time_tab(get_cur_secs()) ; table_param.time_start.day =0	-- Start Time
+	table_param.time_start.name = "Time to start" ; table_param.time_start.value = time_tab(math.ceil((get_cur_secs()+120)/60)*60) ; table_param.time_start.day = 0	-- Start Time
 	table_param.ramp_start.name = "Start Ramp" ; table_param.ramp_start.value = {0,0,0} ; table_param.ramp_start.day = 0	-- Ramp start time
 	table_param.ramp_iso.name = "End ISO" ; table_param.ramp_iso.value = camera.iso.value					-- End ramp ISO value
 	table_param.ramp_end.name = "Stop Ramp" ; table_param.ramp_end.value = {0,0,0} ; table_param.ramp_end.day = 0	-- Ramp end value
 	table_param.time_end.name = "Time to stop" ; table_param.time_end.value = {0,0,0} ; table_param.time_end.day = 0	-- End Time
-	table_param.interval.name = "Interval" ; table_param.interval.value = 0									-- Interval
-	table_param.mludelay.name = "MLU Delay" ; table_param.mludelay.value = 0								-- Mirro lockup delay
+	table_param.interval.name = "Interval" ; table_param.interval.value = 0									-- Interval in s
+	table_param.mludelay.name = "MLU Delay" ; table_param.mludelay.value = 0								-- Mirro lockup delay in ms
 
 	while error ~= true or error ~= "Q" do
 		-- Etape 2 création de la conf de début de cycle
@@ -595,7 +621,8 @@ function main()
 			break
 		end
 		-- Gestion du jour, attention pas de gestion du changement d'année
-		if table_param.ramp_end.seconds > table_param.ramp_start.seconds then
+		if table_param.ramp_end.seconds > table_param.ramp_start.seconds
+		then
 			table_param.ramp_end.day = table_param.ramp_start.day
 		else
 			table_param.ramp_end.day = table_param.ramp_start.day + 1
@@ -671,11 +698,30 @@ function main()
 		log ("%s - Start at %ss and %s ISO",pretty_time(get_cur_secs()), table_param.time_start.seconds, table_param.iso_start.value)
 		log ("%s - Start with Interval = %ss, MLU = %sms",pretty_time(get_cur_secs()), table_param.interval.value, table_param.mludelay.value)
 		log ("%s - Ramp at : %ss and finish at : %ss with %s ISO",pretty_time(get_cur_secs()), table_param.ramp_start.seconds, table_param.ramp_end.seconds, table_param.ramp_iso.value)
-		log ("%s - End at : %ss ",pretty_time(get_cur_secs()), table_param.time_end.seconds)	
+		log ("%s - End at : %ss ",pretty_time(get_cur_secs()), table_param.time_end.seconds)
 
 		lineConfigNow = 0
 		drow_table()
-		key.wait()
+
+		-- Start O/N
+		local answer = shoose_answer("Start ?",{"Yes","No"})
+		-- Gesion de la sortie
+		if answer == "Q" then
+			print("key Q pressed => Exit !")
+			log ("%s - key Q pressed => Exit ! ",pretty_time(get_cur_secs()))
+			break
+		elseif answer == "Yes" then
+			console.show()
+			log ("%s - Start sequence ! ",pretty_time(get_cur_secs()))
+			do_action()
+			log ("%s - End sequence ! ",pretty_time(get_cur_secs()))
+			break
+		elseif answer == "No" then
+			log ("%s - No Start back to config ! ",pretty_time(get_cur_secs()))
+		else
+			log ("%s - Error on %s, exit application ! ",pretty_time(get_cur_secs()), answer)
+			break
+		end
 	end
 	
 	keys:stop()

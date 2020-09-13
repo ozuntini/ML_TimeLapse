@@ -1,3 +1,10 @@
+## Changelog 13/09/2020
+Ajout de la question "start ?" et gestion de la réponse.
+Création de la fonction shoose_answer() pour afficher la question.
+Modification de la fonction set_mirror_lockup pour utiliser le mode always on qui et le mode standard de Canon.
+Arrondi à la minute supérieure + 2 dans l’affichage de l’heure initiale
+Implémentation de la séquences de prise de vues avec gestion des plateaux un et deux et de la séquence de ramping.
+
 ## Changelog 07/09/2020
 Gestion de la sortie par la touche Q
 Gestion des erreurs à la saisie des paramètres
@@ -19,7 +26,7 @@ Ajout de la saisie du MLU Delay
 Modification de l'heure affichée à l'ouverture de la saisie est égale à l'heure précédente dans le cycle.
 Dans l'heure affichée à l'ouverture de la saisie les secondes sont toujours à 0
 Fonction drow_time_box pour afficher en high light le digit en cours de modif
-Fonction drow-table pour la afficher l'ensemble des paramètres
+Fonction drow-table pour afficher l'ensemble des paramètres
 Passage en table des paramètres de configuration
 Début de factorisation de code
 

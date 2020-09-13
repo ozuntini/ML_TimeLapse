@@ -69,11 +69,13 @@ if [ -n $nameLog ]; then
     echo -e "\n"`date`"---- Nouvelle version du script ! -----------------------------" >> /Volumes/EOS_DIGITA1/$nameLog
 fi
 
+sleep 5
 echo "-> Fermeture des cartes 1 et 2"
 hdiutil detach "/Volumes/EOS_DIGITAL"
+
 hdiutil detach "/Volumes/EOS_DIGITA1"
 
-sleep 10
+sleep 5
 
 echo "-> Démarrage de l'émulation ML pour le "$model
 ./run_canon_fw.sh $model,firmware="boot=1"
