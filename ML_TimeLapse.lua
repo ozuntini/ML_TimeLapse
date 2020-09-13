@@ -113,11 +113,13 @@ end
 -- Take a shutter speed expressed in (fractional) seconds and convert it to 1/x.
 function pretty_shutter(shutter_speed)
 	local text_time = ""
-	if (shutter_speed >= 1.0)
+	if (shutter_speed > 0.25)
 	then
+		shutter_speed = math.ceil(shutter_speed * 100) / 100
 		text_time = tostring (shutter_speed)
 	else
-		text_time = string.format ("1/%s", tostring (1/shutter_speed))
+		shutter_speed = math.ceil(1 / shutter_speed)
+		text_time = string.format ("1/%s", tostring (shutter_speed))
 	end
 	return text_time
 end

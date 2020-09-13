@@ -2,7 +2,7 @@
 ## TimeLapse avec Magic Lantern  
 
 Exécution d'un cycle de photos pour réaliser un time lapse avec la gestion du passage du jour à la nuit.  
-Qualifié avec un Canon 6D.  
+Qualifié avec un Canon 6D et 60D.  
 
 ## Principe de fonctionnement
 Le programme ML_TimeLapse.lua va réaliser une série de photos avec un cycle précis.  
@@ -15,14 +15,12 @@ Attention ! Il faut activer le module lua  "Lua scripting" dans le menu Modules 
 ![Menu Modules](./images/Modules.png)  
 Copier le script ML_TimeLapse.lua dans le répertoire ML/SCRIPTS de la carte SD.
 
-
-
 ### Attention ! 
 Le temps minimum entre deux images est de 1s.
 
 ## Lancement de la séquence
 * Choisir le menu script.  
-* Déplacer la barre de sélection sur le choix Eclipse ML OZ.  
+* Déplacer la barre de sélection sur le choix ML_TimeLapse.  
 * Lancer la séquence avec la touche SET.
 
 Menu Scripts  
@@ -52,29 +50,36 @@ A chaque lancement de séquence, un fichier log __MLTL.LOG__ est créé à la ra
 Toutes les actions de la séquence sont loggés dans le fichier.
 ```
 ===============================================================================
-ML/SCRIPTS/ML_TIM~1.LUA - 2017-9-30 14:15:00
+ML/SCRIPTS/ML_TIM~1.LUA - 2020-9-13 22:03:44
 ===============================================================================
 
-==> ML_TimeLapse.lua - Version : 1.0.0
-14:15:00 - Log begin.
-14:15:00 - get init parameter iso at 100
-14:15:00 - Apply init parameter iso at 100
-14:15:00 - Table iso updated with 22 arguments
-14:15:00 - ISO Table = 22 values
-14:15:00 - Get ISO = 100
-14:15:00 - Get Time Start at 15:10:00
-14:15:00 - Start at 54600s and 100 ISO
-14:15:00 - Get Start Ramp at 15:30:00
-14:15:00 - Get ISO Ramp end = 6400
-14:15:00 - Get End Ramp at 16:00:00
-14:15:00 - Ramping Start at 55800s and finish at 57600s ISO
-14:15:00 - Get Time End at 17:15:00
-14:15:00 - End at 62100s
-14:15:00 - Get Interval = 12
-14:15:00 - Interval = 12s
-14:15:00 - Star at : 54600s with 100 ISO and Interval = 12s
-14:15:00 - Ramp at : 55800s and finish at : 57600s with 6400 ISO
-14:15:00 - End at : 62100s 
-14:15:00 - Normal exit.
+==> ML_TimeLapse.lua - Version : 1.0.3 
+22:03:44 - Log begin.
+22:03:44 - get init parameter iso at 6400
+22:03:46 - Apply init parameter iso at 6400
+22:03:46 - Table iso updated with 22 arguments
+22:03:46 - ISO Table = 22 values
+22:03:52 - Get Start ISO value : 100 index : 1
+22:04:05 - Get Time to start at 22:05:00
+22:04:06 - Start at 79500s and 100 ISO
+22:04:08 - Get Start Ramp at 22:06:00
+22:04:11 - Get Stop Ramp at 22:07:00
+22:04:17 - Get End ISO value : 6400 index : 19
+22:04:17 - Ramping Start at 79560s and finish at 79620s with 6400 ISO
+22:04:24 - Get Time to stop at 22:08:00
+22:04:24 - End at 79680s
+22:04:30 - Get Interval value : 10 index : 10
+22:04:32 - Get MLU Delay value : 0 index : 1
+22:04:32 - Interval = 10s and MLU Delay = 0ms
+22:04:32 - Start at 79500s and 100 ISO
+22:04:32 - Start with Interval = 10s, MLU = 0ms
+22:04:32 - Ramp at : 79560s and finish at : 79620s with 6400 ISO
+22:04:32 - End at : 79680s 
+22:05:01 - Get Start ? : Yes
+22:05:01 - Start sequence ! 
+22:05:01 - Set mirror lockup OFF.
+22:05:01 - Relativ : Zero : 92 Start : -1 Startramp : 59 Stopramp : 119 Stop : 179
+22:05:01 - Duration = To go : -1 Start : 60 Ramp : 60 Stop : 60
+22:05:01 - NO Shoot! ISO: 100 Aperture: 0 shutter: 1 Test Mode
 
 ```

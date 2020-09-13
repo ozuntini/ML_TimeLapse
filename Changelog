@@ -1,3 +1,7 @@
+## Changelog XX/09/2020
+Amélioration de l'arrondi de la valeur du shutter speed
+Mise à jour du Manuel d'utilisation.md
+
 ## Changelog 13/09/2020
 Ajout de la question "start ?" et gestion de la réponse.
 Création de la fonction shoose_answer() pour afficher la question.
