@@ -2,7 +2,7 @@
 ## TimeLapse avec Magic Lantern  
 
 Exécution d'un cycle de photos pour réaliser un time lapse avec la gestion du passage du jour à la nuit.  
-Qualifié avec un Canon 6D et 60D.  
+Qualifié avec un Canon 6D et un 60D.  
 
 ## Principe de fonctionnement
 Le programme ML_TimeLapse.lua va réaliser une série de photos avec un cycle précis.  
@@ -15,16 +15,24 @@ Attention ! Il faut activer le module lua  "Lua scripting" dans le menu Modules 
 ![Menu Modules](./images/Modules.png)  
 Copier le script ML_TimeLapse.lua dans le répertoire ML/SCRIPTS de la carte SD.
 
-### Attention ! 
-Le temps minimum entre deux images est de 1s.
-
-## Lancement de la séquence
+## Lancement de l'application
 * Choisir le menu script.  
 * Déplacer la barre de sélection sur le choix ML_TimeLapse.  
-* Lancer la séquence avec la touche SET.
+* Lancer l'application avec la touche SET.
+
 
 Menu Scripts  
 ![Menu Scripts](./images/Scripts.png)
+
+# Utilisation de l'application
+Une fois lancée l'application affiche, en haut à droite, un tableau récapitulatif des paramètres.
+
+![Menu set ISO](./images/setISO.png)
+
+Au milieu se fait la saisie des paramètres du cycle de prise de vues.
+
+![Menu set Time](./images/setTime.png)
+
 
 # Paramétrage du boitier
 Le boitier doit être en mode :
@@ -32,11 +40,14 @@ Le boitier doit être en mode :
 * Mode Manuel
 * Auto Focus en off
 
+## Attention ! 
+Le temps minimum entre deux images est de 1s.
+
 ## Mirror Lockup
 Si le boitier le permet il est possible d'utiliser le Mirrorlockup. Cela permet d'éviter des vibrations pendant la prise de vue.  
 Menu Shoot - Mirror Lockup  
 ![Menu Shoot-Mirror-Lockup](./images/Shoot-MirrorLockup.png)  
-La configuration MLU Mirror Lockup est piloté par le script mais il est possible qu'elle ne soit pas acceptée. 
+La configuration MLU Mirror Lockup est pilotée par le script mais il est possible qu'elle ne soit pas acceptée. 
 
 # Configurations
 ## Mode test

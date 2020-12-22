@@ -21,7 +21,7 @@ LoggingFilename = "mltl.log"
 -- Mode test
 -- Le mode test ne déclenche pas dans ce cas il faut que la valeur soit 1
 -- Il est possible de configurer le TestMode dans la ligne de config du script de schedule
-TestMode = 1
+TestMode = 0
 
 -- Init de la table de config - Table de string
 table_param = {}
@@ -413,9 +413,9 @@ function take_shoot(iso, mluDelay) -- mluDelay = delay to wait after mirror lock
     if (TestMode == 1)
     then
         log ("%s - NO Shoot! ISO: %s Aperture: %s shutter: %s Test Mode",pretty_time(get_cur_secs()), tostring(camera.iso.value), tostring(camera.aperture.value), pretty_shutter(camera.shutter.value))
-    else
+	else
+		log ("%s - Shoot! ISO: %s Aperture: %s shutter: %s",pretty_time(get_cur_secs()), tostring(camera.iso.value), tostring(camera.aperture.value), pretty_shutter(camera.shutter.value))
         camera.shoot(false) -- Shoot a picture
-        log ("%s - Shoot! ISO: %s Aperture: %s shutter: %s",pretty_time(get_cur_secs()), tostring(camera.iso.value), tostring(camera.aperture.value), pretty_shutter(camera.shutter.value))
     end
     if (mluDelay > 0)
     then
