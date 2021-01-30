@@ -1,5 +1,5 @@
 -- Magic Lantern TimeLapse
-Version = "1.0.3 "
+Version = "1.1.0 "
 -- Exécution d'un cycle de photos pour réaliser un time lapse avec la gestion du passage du jour à la nuit.  
 -- Qualifié avec un Canon 6D.  
 -- Le programme ML_TimeLapse.lua va réaliser une série de photos avec un cycle précis.  

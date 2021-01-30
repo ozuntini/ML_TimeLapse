@@ -1,17 +1,17 @@
 # Projet ML_TimeLapse
 ## TimeLapse avec Magic Lantern  
 
-Exécution d'un cycle de photos pour réaliser un time lapse avec la gestion du passage du jour à la nuit.  
+Exécution d'un cycle de photos pour réaliser un time-lapse avec la gestion du passage du jour à la nuit.  
 Qualifié avec un Canon 6D et un 60D.  
 
 ## Principe de fonctionnement
-Le programme ML_TimeLapse.lua va réaliser une série de photos avec un cycle précis.  
+Le programme ML_TimeLapse.lua va réaliser une série de photos avec un cycle défini par l'utilisateur.  
 Il est exécuté par l'application Magic Lantern. Les informations sur Magic Lantern sont données dans le chapitre suivant.
 
 ## Magic Lantern
 Installer Magic Lantern sur votre boitier.  
 https://www.magiclantern.fm/index.html  
-Attention ! Il faut activer le module lua  "Lua scripting" dans le menu Modules de MagicLantern.  
+Attention ! Il faut activer le module lua "Lua scripting" dans le menu Modules de MagicLantern.  
 ![Menu Modules](./images/Modules.png)  
 Copier le script ML_TimeLapse.lua dans le répertoire ML/SCRIPTS de la carte SD.
 
@@ -40,7 +40,7 @@ La touche Q permet de sortir de l'application sans lancer le cycle.
 
 # Paramétrage du boitier
 Le boitier doit être en mode :
-* Auto power off à  Disable
+* Auto power off à Disable
 * Mode Manuel
 * Auto Focus en off
 
@@ -62,7 +62,7 @@ Pour activer/désactiver ce mode, modifier le champ TestMode dans la ligne Confi
 
 # Fichier log
 A chaque lancement de séquence, un fichier log __MLTL.LOG__ est créé à la racine de la carte SD.  
-Toutes les actions de la séquence sont loggés dans le fichier.
+Toutes les actions de la séquence sont tracées dans le fichier.
 ```
 ===============================================================================
 ML/SCRIPTS/ML_TIM~1.LUA - 2020-9-13 22:03:44
