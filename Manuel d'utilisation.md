@@ -18,7 +18,7 @@ Copier le script ML_TimeLapse.lua dans le répertoire ML/SCRIPTS de la carte SD.
 ## Lancement de l'application
 * Choisir le menu script.  
 * Déplacer la barre de sélection sur le choix ML_TimeLapse.  
-* Lancer l'application avec la touche SET.
+* Lancer l'application avec la touche **SET**.
 
 
 Menu Scripts  
@@ -33,10 +33,10 @@ Au milieu se fait la saisie des paramètres du cycle de prise de vues.
 
 ![Menu set Time](./images/setTime.png)
 
-Le déplacement sur les digits se fait avec les touches Droite et Gauche.  
-Le changement de valeur se fait avec les touches Haut et Bas.  
-La touche Set valide la valeur.  
-La touche Q permet de sortir de l'application sans lancer le cycle.  
+Le déplacement sur les digits se fait avec les touches **Droite** et **Gauche**.  
+Le changement de valeur se fait avec les touches **Haut** et **Bas**.  
+La touche **SET** valide la valeur.  
+La touche **Q** permet de sortir de l'application sans lancer le cycle.  
 
 # Paramétrage du boitier
 Le boitier doit être en mode :

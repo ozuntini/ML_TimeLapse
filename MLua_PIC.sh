@@ -7,12 +7,12 @@ repQemu="/Users/olivierzuntini/Documents/Projects/qemu-eos"
 
 if [ "$1" == "" ] || [ -d "$1" ] || [ "$1" == "-h" ] || [ "$#" -lt 2 ]; then
     echo "usage: MLua_PIC.sh <Modèle> <Nom_du_script> [-log]"
-    echo "       6D ou 60D"
+    echo "       6D, 60D ou 5D3"
     echo "       script.lua"
     echo "       -log récupération des .LOG"
     exit
 else
-    if [ $1 != "6D" ] && [ $1 != "60D" ]; then
+    if [ $1 != "6D" ] && [ $1 != "60D" ] && [ $1 != "5D3" ]; then
         echo $1" n'est pas un modèle connu"
         exit 1
     else

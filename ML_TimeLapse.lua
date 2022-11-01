@@ -328,10 +328,10 @@ function get_param(title, paramTab)
 		local key = keys:getkey()
 		if key ~= nil then
 			if key == KEY.Q then return "Q"
-			elseif key == KEY.UP or key == KEY.WHEEL_UP then
+			elseif key == KEY.UP or key == KEY.WHEEL_UP or key == KEY.WHEEL_RIGHT then
 				i = i + 1
 				if i > #paramTab then i = 1 end
-			elseif key == KEY.DOWN or key == KEY.WHEEL_DOWN then
+			elseif key == KEY.DOWN or key == KEY.WHEEL_DOWN or key == KEY.WHEEL_LEFT then
 				i = i - 1
 				if i < 1 then i = #paramTab end
 			elseif key == KEY.SET then
